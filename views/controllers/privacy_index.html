@@ -1,0 +1,48 @@
+{style}
+{literal}
+tr.ow_privacy td.ow_label{
+    width:40%
+}
+{/literal}
+{/style}
+
+{$contentMenu}
+
+{block_decorator name="box" type="empty" addClass="ow_superwide ow_automargin"}
+
+    {block_decorator name="box" type="empty" addClass="ow_center ow_stdmargin"}
+        {text key='privacy+privacy_description'}
+    {/block_decorator}
+    {if empty($actionList)}
+        {block_decorator name="box" type="empty" addClass="ow_center" style="padding:15px;"}
+             {text key="privacy+no_items"}
+        {/block_decorator}
+    {else}
+        {form name='privacyForm'}
+            <table class="ow_table_1 ow_form ow_smallmargin">
+                {foreach from=$actionList item='action' name="a"}
+                        <tr class="ow_privacy {cycle name='privacy_action' values='ow_alt1,ow_alt2'} {if $smarty.foreach.a.first}ow_tr_first{/if} {if $smarty.foreach.a.last}ow_tr_last{/if}">
+                            <td class="ow_label">
+                                {label name=$action}
+                            </td>
+                            <td class="ow_value">
+                                {input name=$action}
+                                <div style="height:1px;"></div>
+                                {error name=$action}
+                            </td>
+                            <td class="ow_desc">
+                                {desc name=$action}
+                            </td>
+                        </tr>
+                {/foreach}
+
+            </table>                            
+			{block_decorator name="box" type="empty" addClass="ow_center ow_anno ow_smallmargin"}
+			   {text key='privacy+bottom warning'}
+			{/block_decorator}                            
+            <div class="clearfix ow_smallmargin">
+				<div class="ow_right">{submit name='privacySubmit'}</div>
+			</div>
+        {/form}
+    {/if}
+{/block_decorator}
