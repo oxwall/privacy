@@ -93,23 +93,13 @@ class PRIVACY_CTRL_Privacy extends OW_ActionController
         $data = $actionValuesEvent->getData();
         
         $actionValuesInfo = empty($data) ? array() : $data;
-
+        usort($actionValuesInfo, array($this, "sortPrivacyOptions"));
+        
         $optionsList = array();
-        $sortOptionsList = array();
-        $order = array();
-
         // -- sort action values
         foreach( $actionValuesInfo as $value )
         {
             $optionsList[$value['key']] = $value['label'];
-            $order[$value['sortOrder']] = $value['key'];
-        }
-
-        asort($order);
-
-        foreach( $order as $key )
-        {
-            $sortOptionsList[$key] = $optionsList[$key];
         }
         // --
 
@@ -131,14 +121,14 @@ class PRIVACY_CTRL_Privacy extends OW_ActionController
                     $formElement->setDescription($action->description);
                 }
 
-                $formElement->setOptions($sortOptionsList);
+                $formElement->setOptions($optionsList);
                 $formElement->setHasInvitation(false);
 
                 if ( !empty($actionValueList[$action->key]) )
                 {
                     $formElement->setValue($actionValueList[$action->key]);
                     
-                    if( array_key_exists($actionValueList[$action->key], $sortOptionsList) )
+                    if( array_key_exists($actionValueList[$action->key], $optionsList) )
                     {
                         $formElement->setValue($actionValueList[$action->key]);
                     }
@@ -177,6 +167,16 @@ class PRIVACY_CTRL_Privacy extends OW_ActionController
         
         $this->addForm($privacyForm);
         $this->assign('actionList', $resultList);
+    }
+    
+    private function sortPrivacyOptions( $a, $b )
+    {
+        if ( $a["sortOrder"] == $b["sortOrder"]  )
+        {
+            return 0;
+        }
+        
+        return $a["sortOrder"] < $b["sortOrder"] ? -1 : 1;
     }
 
     public function noPermission( $params )
