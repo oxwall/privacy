@@ -265,21 +265,114 @@ class PRIVACY_CLASS_EventHandler
         return true;
     }
 
+    public function onFindBookmarksUserIdList( BASE_CLASS_QueryBuilderEvent $event )
+    {
+        $params = $event->getParams();
+        $userId = $params['userId'];
+        $authService = BOL_AuthorizationService::getInstance();
+
+        if ( $params['list'] != BOOKMARKS_BOL_Service::LIST_ONLINE || $authService->isActionAuthorizedForUser($userId, $authService::ADMIN_GROUP_NAME) )
+        {
+            return;
+        }
+
+        $event->addJoin('LEFT JOIN `' . PRIVACY_BOL_ActionDataDao::getInstance()->getTableName() . '` AS `p` ON `b`.`markUserId` = `p`.`userId`');
+
+        $sqlWhere = "( `p`.`key` = 'base_view_my_presence_on_site' AND `p`.`value` = 'everybody' ) OR `p`.`id` IS NULL";
+
+        if ( OW::getPluginManager()->isPluginActive('friends') )
+        {
+            $event->addJoin('LEFT JOIN `' . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . '` AS `f` ON `b`.`markUserId` = `f`.`userId` OR `b`.`markUserId` = `f`.`friendId`');
+
+            $sqlWhere = "(" . $sqlWhere . " ) OR (( `p`.`key` = 'base_view_my_presence_on_site' AND `p`.`value` = 'friends_only' AND ( `f`.`userId` = {$userId} OR `f`.`friendId` = {$userId} ) ) OR `p`.`id` IS NULL)";
+        }
+
+        $event->addWhere($sqlWhere);
+    }
+
+    public function onBeforeUserSearch( OW_Event $event )
+    {
+        $data = $event->getData();
+        $params = $event->getParams();
+        $paramsData = $params['data'];
+        $userId = OW::getUser()->getId();
+        $authService = BOL_AuthorizationService::getInstance();
+
+        if ( empty($paramsData['online']) || $authService->isActionAuthorizedForUser($userId, $authService::ADMIN_GROUP_NAME) )
+        {
+            return;
+        }
+
+        $data['aditionalParams']['join'] .= " LEFT JOIN `" . PRIVACY_BOL_ActionDataDao::getInstance()->getTableName() . "` AS `privacy` ON `user`.`id` = `privacy`.`userId` ";
+
+        $sqlWhere = " ( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'everybody' ) OR `privacy`.`id` IS NULL ";
+
+        if ( OW::getPluginManager()->isPluginActive('friends') )
+        {
+            $data['aditionalParams']['join'] .= " LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `user`.`id` = `f`.`userId` OR `user`.`id` = `f`.`friendId` ";
+
+            $sqlWhere = "((" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `user`.`id` OR `f`.`friendId` = `user`.`id` ) ) OR `privacy`.`id` IS NULL)) ";
+        }
+
+        $data['aditionalParams']['where'] .= " AND " . $sqlWhere;
+
+        $event->setData($data);
+    }
+
+    public function onUserFilter( BASE_CLASS_QueryBuilderEvent $event )
+    {
+        $params = $event->getParams();
+
+        if ( $params['method'] != 'BOL_UserDao::findOnlineList' && $params['method'] != 'BOL_UserDao::countOnline' )
+        {
+            return;
+        }
+
+        $data = $event->getData();
+
+        $data['join'][] = "LEFT JOIN `" . PRIVACY_BOL_ActionDataDao::getInstance()->getTableName() . "` AS `privacy` ON `u`.`id` = `privacy`.`userId`";
+
+        $sqlWhere = "( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'everybody' ) OR `privacy`.`id` IS NULL";
+
+        if ( OW::getPluginManager()->isPluginActive('friends') )
+        {
+            $data['join'][] = "LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `u`.`id` = `f`.`userId` OR `u`.`id` = `f`.`friendId`";
+
+            $sqlWhere = "(" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `u`.`id` OR `f`.`friendId` = `u`.`id` ) ) OR `privacy`.`id` IS NULL)";
+        }
+
+        $data['where'][] = $sqlWhere;
+
+        $event->setData($data);
+    }
+
     public function genericInit()
     {
-        OW::getEventManager()->bind('base.preference_menu_items', array($this, 'addPrivacyPreferenceMenuItem'));
-        OW::getEventManager()->bind(PRIVACY_BOL_ActionService::EVENT_GET_PRIVACY_LIST, array($this, 'addPrivacy'));
-        OW::getEventManager()->bind('plugin.privacy.get_privacy', array($this, 'getActionPrivacy'));
-        OW::getEventManager()->bind('plugin.privacy.get_main_privacy', array($this, 'getActionMainPrivacyByOwnerIdList'));
-        OW::getEventManager()->bind(OW_EventManager::ON_USER_UNREGISTER, array($this, 'removeUserPrivacy'));
-        OW::getEventManager()->bind(OW_EventManager::ON_BEFORE_PLUGIN_UNINSTALL, array($this, 'removePluginPrivacy'));
-        OW::getEventManager()->bind(PRIVACY_BOL_ActionService::EVENT_CHECK_PERMISSION, array($this, 'checkPremission'));
-        OW::getEventManager()->bind(PRIVACY_BOL_ActionService::EVENT_CHECK_PERMISSION_FOR_USER_LIST, array($this, 'checkPremissionForUserList'));
-        OW::getEventManager()->bind('plugin.privacy.check_permission', array($this, 'permissionEverybody'));
-        OW::getEventManager()->bind('plugin.privacy.check_permission', array($this, 'permissionOnlyForMe'));
-        OW::getEventManager()->bind('plugin.privacy', array($this, 'pluginIsActive'));
+        $eventManager = OW::getEventManager();
+
+        $eventManager->bind('base.preference_menu_items', array($this, 'addPrivacyPreferenceMenuItem'));
+        $eventManager->bind(PRIVACY_BOL_ActionService::EVENT_GET_PRIVACY_LIST, array($this, 'addPrivacy'));
+        $eventManager->bind('plugin.privacy.get_privacy', array($this, 'getActionPrivacy'));
+        $eventManager->bind('plugin.privacy.get_main_privacy', array($this, 'getActionMainPrivacyByOwnerIdList'));
+        $eventManager->bind(OW_EventManager::ON_USER_UNREGISTER, array($this, 'removeUserPrivacy'));
+        $eventManager->bind(OW_EventManager::ON_BEFORE_PLUGIN_UNINSTALL, array($this, 'removePluginPrivacy'));
+        $eventManager->bind(PRIVACY_BOL_ActionService::EVENT_CHECK_PERMISSION, array($this, 'checkPremission'));
+        $eventManager->bind(PRIVACY_BOL_ActionService::EVENT_CHECK_PERMISSION_FOR_USER_LIST, array($this, 'checkPremissionForUserList'));
+        $eventManager->bind('plugin.privacy.check_permission', array($this, 'permissionEverybody'));
+        $eventManager->bind('plugin.privacy.check_permission', array($this, 'permissionOnlyForMe'));
+        $eventManager->bind('plugin.privacy', array($this, 'pluginIsActive'));
+        $eventManager->bind("base.query.user_filter", array($this, 'onUserFilter'));
+
+        if ( OW::getPluginManager()->isPluginActive('bookmarks') )
+        {
+            $eventManager->bind(BOOKMARKS_BOL_Service::EVENT_ON_BEFORE_FIND_BOOKMARKS_USER_ID_LIST, array($this, 'onFindBookmarksUserIdList'));
+        }
+
+        if ( OW::getPluginManager()->isPluginActive('usearch') )
+        {
+            $eventManager->bind('base.question.before_user_search', array($this, 'onBeforeUserSearch'));
+        }
     }
-	
 
     public function init()
     {
