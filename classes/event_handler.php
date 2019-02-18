@@ -365,7 +365,7 @@ class PRIVACY_CLASS_EventHandler
 
         if ( OW::getPluginManager()->isPluginActive('bookmarks') )
         {
-            $eventManager->bind(BOOKMARKS_BOL_Service::EVENT_ON_BEFORE_FIND_BOOKMARKS_USER_ID_LIST, array($this, 'onFindBookmarksUserIdList'));
+            $eventManager->bind('bookmarks.find_bookmarks_user_id_list', array($this, 'onFindBookmarksUserIdList'));
         }
 
         if ( OW::getPluginManager()->isPluginActive('usearch') )
