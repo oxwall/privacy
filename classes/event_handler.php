@@ -310,7 +310,7 @@ class PRIVACY_CLASS_EventHandler
 
         if ( OW::getPluginManager()->isPluginActive('friends') )
         {
-            $data['aditionalParams']['join'] .= " LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `user`.`id` = `f`.`userId` OR `user`.`id` = `f`.`friendId` ";
+            $data['aditionalParams']['join'] .= " LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `user`.`id` = `f`.`userId` ";
             $data['aditionalParams']['join'] .= " LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f1` ON `user`.`id` = `f1`.`friendId` ";
 
             $sqlWhere = "((" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `user`.`id` OR `f1`.`friendId` = `user`.`id` ) ) OR `privacy`.`id` IS NULL)) ";
