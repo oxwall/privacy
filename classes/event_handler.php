@@ -282,9 +282,10 @@ class PRIVACY_CLASS_EventHandler
 
         if ( OW::getPluginManager()->isPluginActive('friends') )
         {
-            $event->addJoin('LEFT JOIN `' . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . '` AS `f` ON `b`.`markUserId` = `f`.`userId` OR `b`.`markUserId` = `f`.`friendId`');
+            $event->addJoin('LEFT JOIN `' . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . '` AS `f` ON `b`.`markUserId` = `f`.`userId`');
+            $event->addJoin('LEFT JOIN `' . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . '` AS `f1` ON `b`.`markUserId` = `f1`.`friendId`');
 
-            $sqlWhere = "(" . $sqlWhere . " ) OR (( `p`.`key` = 'base_view_my_presence_on_site' AND `p`.`value` = 'friends_only' AND ( `f`.`userId` = {$userId} OR `f`.`friendId` = {$userId} ) ) OR `p`.`id` IS NULL)";
+            $sqlWhere = "(" . $sqlWhere . " ) OR (( `p`.`key` = 'base_view_my_presence_on_site' AND `p`.`value` = 'friends_only' AND ( `f`.`userId` = {$userId} OR `f1`.`friendId` = {$userId} ) ) OR `p`.`id` IS NULL)";
         }
 
         $event->addWhere($sqlWhere);
@@ -310,8 +311,9 @@ class PRIVACY_CLASS_EventHandler
         if ( OW::getPluginManager()->isPluginActive('friends') )
         {
             $data['aditionalParams']['join'] .= " LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `user`.`id` = `f`.`userId` OR `user`.`id` = `f`.`friendId` ";
+            $data['aditionalParams']['join'] .= " LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f1` ON `user`.`id` = `f1`.`friendId` ";
 
-            $sqlWhere = "((" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `user`.`id` OR `f`.`friendId` = `user`.`id` ) ) OR `privacy`.`id` IS NULL)) ";
+            $sqlWhere = "((" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `user`.`id` OR `f1`.`friendId` = `user`.`id` ) ) OR `privacy`.`id` IS NULL)) ";
         }
 
         $data['aditionalParams']['where'] .= " AND " . $sqlWhere;
@@ -336,9 +338,10 @@ class PRIVACY_CLASS_EventHandler
 
         if ( OW::getPluginManager()->isPluginActive('friends') )
         {
-            $data['join'][] = "LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `u`.`id` = `f`.`userId` OR `u`.`id` = `f`.`friendId`";
+            $data['join'][] = "LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f` ON `u`.`id` = `f`.`userId`";
+            $data['join'][] = "LEFT JOIN `" . FRIENDS_BOL_FriendshipDao::getInstance()->getTableName() . "` AS `f1` ON `u`.`id` = `f1`.`friendId`";
 
-            $sqlWhere = "(" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `u`.`id` OR `f`.`friendId` = `u`.`id` ) ) OR `privacy`.`id` IS NULL)";
+            $sqlWhere = "(" . $sqlWhere . " ) OR (( `privacy`.`key` = 'base_view_my_presence_on_site' AND `privacy`.`value` = 'friends_only' AND ( `f`.`userId` = `u`.`id` OR `f1`.`friendId` = `u`.`id` ) ) OR `privacy`.`id` IS NULL)";
         }
 
         $data['where'][] = $sqlWhere;
