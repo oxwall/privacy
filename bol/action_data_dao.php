@@ -31,7 +31,7 @@ class PRIVACY_BOL_ActionDataDao extends OW_BaseDao
 {
     const ACTION = 'key';
     const USER_ID = 'userId';
-    const PLUGIN_KEY = 'plugin_key';
+    const PLUGIN_KEY = 'pluginKey';
     const VALUE = 'value';
 
     /**
@@ -163,7 +163,7 @@ class PRIVACY_BOL_ActionDataDao extends OW_BaseDao
         }
 
         $example = new OW_Example();
-        $example->andFieldEqual(self::USER_ID, $pluginKey);
+        $example->andFieldEqual(self::PLUGIN_KEY, $pluginKey);
 
         $this->deleteByExample($example);
 
